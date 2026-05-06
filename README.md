@@ -60,7 +60,7 @@ Example for `@acme/colors`:
 ```json
 {
   "devDependencies": {
-    "@omi-io/pkg-scripts": "^0.1.0"
+    "@omi-io/pkg-scripts": "^1.0.0"
   }
 }
 ```

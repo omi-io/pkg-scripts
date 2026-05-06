@@ -7,6 +7,69 @@ const DEFAULT_OUT_DIR = "dist";
 const DEFAULT_FORMATS = ["cjs", "esm"];
 const DEFAULT_CONFIG_FILE = "pkg-scripts.config.json";
 
+const DEFAULT_IGNORE_EXPORT_KEYS = [".", "./package.json"];
+
+const normalizeIgnoreExportKey = key => {
+    if (key === ".") {
+        return ".";
+    }
+    return key.startsWith("./") ? key : `./${key}`;
+};
+
+const exportKeyToEntry = exportKey => {
+    if (exportKey === ".") {
+        return null;
+    }
+    if (!exportKey.startsWith("./")) {
+        return exportKey === "package.json" ? null : exportKey;
+    }
+    const subpath = exportKey.slice(2);
+    if (subpath === "" || subpath === "package.json") {
+        return null;
+    }
+    return subpath;
+};
+
+export const getEntriesFromPackageExports = (
+    packageJson,
+    ignoreExportKeys = DEFAULT_IGNORE_EXPORT_KEYS
+) => {
+    const exportsField = packageJson.exports;
+    if (!exportsField || typeof exportsField === "string") {
+        return [];
+    }
+    if (typeof exportsField !== "object" || Array.isArray(exportsField)) {
+        return [];
+    }
+    const ignoreSet = new Set(ignoreExportKeys.map(normalizeIgnoreExportKey));
+    const entries = [];
+    const seen = new Set();
+    for (const key of Object.keys(exportsField)) {
+        if (ignoreSet.has(key)) {
+            continue;
+        }
+        const entry = exportKeyToEntry(key);
+        if (entry == null || seen.has(entry)) {
+            continue;
+        }
+        seen.add(entry);
+        entries.push(entry);
+    }
+    return entries;
+};
+
+const mergeEntryLists = (base, extra) => {
+    const seen = new Set(base);
+    const out = [...base];
+    for (const item of extra) {
+        if (!seen.has(item)) {
+            seen.add(item);
+            out.push(item);
+        }
+    }
+    return out;
+};
+
 export const BASE_BUILD_CONFIG = {
     bundle: true,
     minify: true,
@@ -45,11 +108,23 @@ export const loadPackageConfig = ({
     const packageJson = readJson(packageJsonPath);
     const configPath = path.join(packageDir, configFile);
     const userConfig = existsSync(configPath) ? readJson(configPath) : {};
+    const ignoreExportKeys = [
+        ...DEFAULT_IGNORE_EXPORT_KEYS,
+        ...(userConfig.ignoreExports ?? []),
+    ];
+    const exportEntries = getEntriesFromPackageExports(
+        packageJson,
+        ignoreExportKeys
+    );
+    const configEntries = Array.isArray(userConfig.entries)
+        ? userConfig.entries
+        : [];
+    const entries = mergeEntryLists(exportEntries, configEntries);
 
     return {
         packageDir,
         packageName: packageJson.name,
-        entries: userConfig.entries ?? [],
+        entries,
         sourceDir: userConfig.sourceDir ?? DEFAULT_SOURCE_DIR,
         sourceIndex: userConfig.sourceIndex ?? DEFAULT_SOURCE_INDEX,
         outDir: userConfig.outDir ?? DEFAULT_OUT_DIR,

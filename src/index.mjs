@@ -4,6 +4,7 @@ import { build } from "esbuild";
 import {
     BASE_BUILD_CONFIG,
     FORMAT_CONFIGS,
+    getEntriesFromPackageExports,
     loadPackageConfig,
 } from "./config.mjs";
 
@@ -91,4 +92,4 @@ export const runAlias = ({ cwd, configFile } = {}) => {
     });
 };
 
-export { loadPackageConfig };
+export { getEntriesFromPackageExports, loadPackageConfig };

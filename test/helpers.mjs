@@ -2,19 +2,23 @@ import path from "node:path";
 import os from "node:os";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 
-export const createTmpPackage = () => {
+export const createTmpPackage = (packageJson = { name: "@omiio/test-pkg" }) => {
     const root = mkdtempSync(path.join(os.tmpdir(), "pkg-scripts-"));
     writeFileSync(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "@omiio/test-pkg" }, null, 2),
+        JSON.stringify(packageJson, null, 2),
         "utf-8"
     );
     return root;
 };
 
-export const writeConfig = (root, config) => {
+export const writeConfig = (
+    root,
+    config,
+    configFileName = "pkg-scripts.config.json"
+) => {
     writeFileSync(
-        path.join(root, "pkg-scripts.config.json"),
+        path.join(root, configFileName),
         JSON.stringify(config, null, 2),
         "utf-8"
     );

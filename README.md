@@ -16,20 +16,32 @@ npm install --save-dev @omi-io/pkg-scripts
   - `runBuild()`
   - `runClean()`
   - `runAlias()`
+  - `loadPackageConfig()`
+  - `getEntriesFromPackageExports()`
 - CLI:
   - `omi-io-pkg build`
   - `omi-io-pkg clean`
   - `omi-io-pkg alias`
 
-## Config File
+## Entries and config
 
-Each target package can define `pkg-scripts.config.json` in its package root.
+Sub-entries (all targets besides the package root) are built like this:
+
+1. **Read `package.json` → `exports`.** When `exports` is a plain object, walk its keys in declaration order. Skip keys in the ignore set: always `"."` and `"./package.json"`, plus any listed in `ignoreExports` in the config file (if present). Map each remaining key to a folder under `sourceDir` by stripping a leading `./` (for example `"./math"` → `math`, `"./nested/deep"` → `nested/deep`).
+2. **Merge `entries` from `pkg-scripts.config.json`** when that key is an array: append names that are not already in the list from step 1 (export-derived names stay first, in `exports` key order).
+
+If `exports` is missing or is a single string (shorthand for the main entry only), step 1 yields an empty list; use `entries` in the config file to declare sub-entries explicitly.
+
+### Optional `pkg-scripts.config.json`
+
+Place it in the package root next to `package.json`. You can rely on `exports` alone and skip this file when you do not need extra options.
 
 Example:
 
 ```json
 {
-  "entries": ["core", "domain"],
+  "ignoreExports": ["check"],
+  "entries": ["internal"],
   "sourceDir": "src",
   "sourceIndex": "index.ts",
   "outDir": "dist",
@@ -39,9 +51,13 @@ Example:
 
 ### `pkg-scripts.config.json` schema
 
-- `entries`: `string[]` (default: `[]`)
+- `entries`: `string[]` (optional)
   - Sub-entry folders relative to `sourceDir`.
   - For each entry, scripts expect `<sourceDir>/<entry>/<sourceIndex>`.
+  - When present, these names are **merged** with entries inferred from `package.json` → `exports` (export order first, then any new names from `entries`, without duplicates). Non-array values are ignored.
+- `ignoreExports`: `string[]` (optional)
+  - Extra `exports` keys to skip when building the list (same strings as in `package.json`, or a short name without `./`, e.g. `"check"` is treated like `"./check"`).
+  - Default ignores always apply: `"."` and `"./package.json"`.
 - `sourceDir`: `string` (default: `"src"`)
   - Source root for entry points.
 - `sourceIndex`: `string` (default: `"index.ts"`)
@@ -50,6 +66,10 @@ Example:
   - Build output base directory.
 - `formats`: `("cjs" | "esm" | "iife")[]` (default: `["cjs", "esm"]`)
   - esbuild output formats.
+
+### Programmatic config
+
+`loadPackageConfig({ cwd, configFile })` reads `package.json` and, if it exists, `pkg-scripts.config.json` (or the file name you pass as `configFile`). `getEntriesFromPackageExports(packageJson, ignoreExportKeys?)` applies the same export-key rules as the loader (defaults for ignored keys match the loader when you omit the second argument).
 
 ## Use in Your Package
 
@@ -75,11 +95,11 @@ Example for `@acme/colors`:
 }
 ```
 
-3. Add `pkg-scripts.config.json` with package-specific entries.
+3. List sub-entries under `package.json` → `exports` (recommended), and add `pkg-scripts.config.json` only when you need `ignoreExports`, extra `entries`, or other options.
 
 ## Notes
 
-- `runAlias()` creates `<package>/<entry>/package.json` aliases for subpath imports.
+- `runAlias()` creates `<package>/<entry>/package.json` aliases for subpath imports (one folder per merged entry name).
 - CLI commands resolve config from the current working directory.
 
 ## Releasing (maintainers)

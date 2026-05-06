@@ -1,0 +1,53 @@
+{
+  "name": "@omi-io/pkg-scripts",
+  "version": "0.1.0",
+  "description": "Build utilities and CLI for npm packages: esbuild pipelines, clean, and path aliases.",
+  "author": "a-omi-io (https://github.com/a-omi-io)",
+  "keywords": [
+    "cli",
+    "build",
+    "bundle",
+    "pkg-scripts"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omi-io/pkg-scripts.git"
+  },
+  "homepage": "https://github.com/omi-io/pkg-scripts#readme",
+  "bugs": {
+    "url": "https://github.com/omi-io/pkg-scripts/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "omi-io-pkg": "bin/cli.mjs"
+  },
+  "main": "./src/index.mjs",
+  "module": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "prepublishOnly": "npm test",
+    "pack:dry-run": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "esbuild": "^0.20.2"
+  },
+  "devDependencies": {
+    "glob": "^13.0.6"
+  }
+}

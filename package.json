@@ -32,7 +32,8 @@
   "main": "./src/index.mjs",
   "module": "./src/index.mjs",
   "exports": {
-    ".": "./src/index.mjs"
+    ".": "./src/index.mjs",
+    "./nx": "./src/nx-plugin.mjs"
   },
   "files": [
     "bin",
@@ -47,7 +48,21 @@
   "dependencies": {
     "esbuild": "^0.20.2"
   },
+  "peerDependencies": {
+    "@nx/devkit": ">=19.0.0 <23.0.0",
+    "nx": ">=19.0.0 <23.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@nx/devkit": {
+      "optional": true
+    },
+    "nx": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "glob": "^13.0.6"
+    "@nx/devkit": "19.5.3",
+    "glob": "^13.0.6",
+    "nx": "19.5.3"
   }
 }

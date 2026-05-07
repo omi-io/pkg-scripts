@@ -99,6 +99,37 @@ export const FORMAT_CONFIGS = {
 const resolvePackageDir = cwd => cwd ?? process.cwd();
 const readJson = filePath => JSON.parse(readFileSync(filePath, "utf-8"));
 
+/**
+ * Globs for Nx `build` target `outputs` so task cache restores `outDir` and
+ * top-level alias folders created by `omi-io-pkg alias`.
+ *
+ * @param {{ entries: string[]; outDir?: string }} param0
+ * @returns {string[]}
+ */
+export const getBuildOutputGlobsFromConfig = ({
+    entries,
+    outDir = DEFAULT_OUT_DIR,
+}) => {
+    const norm = segment =>
+        String(segment)
+            .replace(/^\.?\/+/, "")
+            .replace(/\/+$/, "");
+    const base = norm(outDir) || DEFAULT_OUT_DIR;
+    const ordered = new Map();
+    const add = g => {
+        if (g && !ordered.has(g)) {
+            ordered.set(g, true);
+        }
+    };
+    add(`{projectRoot}/${base}/**`);
+    for (const entry of entries ?? []) {
+        if (entry) {
+            add(`{projectRoot}/${norm(entry)}/**`);
+        }
+    }
+    return [...ordered.keys()];
+};
+
 export const loadPackageConfig = ({
     cwd,
     configFile = DEFAULT_CONFIG_FILE,

@@ -18,6 +18,7 @@ npm install --save-dev @omi-io/pkg-scripts
   - `runAlias()`
   - `loadPackageConfig()`
   - `getEntriesFromPackageExports()`
+  - `getBuildOutputGlobsFromConfig()` (for custom tooling; Nx plugin uses this internally)
 - CLI:
   - `omi-io-pkg build`
   - `omi-io-pkg clean`
@@ -80,7 +81,7 @@ Example for `@acme/colors`:
 ```json
 {
   "devDependencies": {
-    "@omi-io/pkg-scripts": "^1.0.0"
+    "@omi-io/pkg-scripts": "^2.1.0"
   }
 }
 ```
@@ -96,6 +97,29 @@ Example for `@acme/colors`:
 ```
 
 3. List sub-entries under `package.json` → `exports` (recommended), and add `pkg-scripts.config.json` only when you need `ignoreExports`, extra `entries`, or other options.
+
+## Nx monorepos (task cache)
+
+Nx can **skip** your `build` script when the output is served from the cache. By default, inferred `outputs` often cover only `dist/`, not the **top-level alias folders** that `omi-io-pkg alias` creates from `exports`. After a cache hit, those folders may be missing until the next full run.
+
+**Optional fix (one-time per workspace):** register the Nx plugin from this package so every library that uses `omi-io-pkg` in `scripts` gets correct `build` `outputs` (merged with any `nx.targets.build.outputs` you already set in that `package.json`).
+
+In the repo root `nx.json`:
+
+```json
+{
+  "plugins": [
+    {
+      "plugin": "@omi-io/pkg-scripts/nx",
+      "options": {}
+    }
+  ]
+}
+```
+
+Requirements: `nx` and `@nx/devkit` compatible with your workspace (v19+). They are **optional** `peerDependencies` of `@omi-io/pkg-scripts`; install them in the workspace root as usual for Nx.
+
+The plugin matches `**/package.json` outside `node_modules`, keeps packages whose **any** script mentions `omi-io-pkg` and that define a **`build`** script, then sets `targets.build.outputs` from `dist` (or `outDir` in `pkg-scripts.config.json`) plus one `{projectRoot}/<entry>/**` per merged entry (same rules as `exports` + config `entries`).
 
 ## Notes
 

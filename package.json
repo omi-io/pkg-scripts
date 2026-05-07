@@ -1,6 +1,6 @@
 {
   "name": "@omi-io/pkg-scripts",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Build utilities and CLI for npm packages: esbuild pipelines, clean, and path aliases.",
   "author": "a-omi-io (https://github.com/a-omi-io)",
   "keywords": [

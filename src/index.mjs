@@ -6,6 +6,7 @@ import {
     FORMAT_CONFIGS,
     loadPackageConfig,
 } from "./config.mjs";
+import { syncAliasDirGitignore } from "./sync-alias-gitignore.mjs";
 
 export const runBuild = async ({ cwd, configFile } = {}) => {
     const config = loadPackageConfig({ cwd, configFile });
@@ -88,6 +89,7 @@ export const runAlias = ({ cwd, configFile } = {}) => {
             `${JSON.stringify(pkgManifest, null, 2)}\n`,
             "utf-8"
         );
+        syncAliasDirGitignore(config.packageDir, alias);
     });
 };
 
@@ -96,3 +98,8 @@ export {
     getBuildOutputGlobsFromConfig,
     loadPackageConfig,
 } from "./config.mjs";
+export {
+    assertSafeAliasEntryForGitignore,
+    ALIAS_DIR_GITIGNORE_CONTENT,
+    syncAliasDirGitignore,
+} from "./sync-alias-gitignore.mjs";

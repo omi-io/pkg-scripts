@@ -19,6 +19,7 @@ npm install --save-dev @omi-io/pkg-scripts
   - `loadPackageConfig()`
   - `getEntriesFromPackageExports()`
   - `getBuildOutputGlobsFromConfig()` (for custom tooling; Nx plugin uses this internally)
+  - `syncAliasDirGitignore()` (optional helper used by `runAlias()` for alias folders)
 - CLI:
   - `omi-io-pkg build`
   - `omi-io-pkg clean`
@@ -124,6 +125,7 @@ The plugin matches `**/package.json` outside `node_modules`, keeps packages whos
 ## Notes
 
 - `runAlias()` creates `<package>/<entry>/package.json` aliases for subpath imports (one folder per merged entry name).
+- **Git:** those stub directories are build outputs. `runAlias()` / `omi-io-pkg alias` writes `<package>/<entry>/.gitignore` for every generated alias folder, with the fixed content `*` (newline-terminated). This keeps generated files in alias directories out of `git status` without requiring package-root ignore rules.
 - CLI commands resolve config from the current working directory.
 
 ## Releasing (maintainers)

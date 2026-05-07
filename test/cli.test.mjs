@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
 import { cleanup, createTmpPackage, writeConfig } from "./helpers.mjs";
@@ -104,6 +104,10 @@ test("cli alias uses entries from package.json exports when config absent", () =
 
         assert.equal(result.status, 0);
         assert.equal(existsSync(path.join(root, "seg", "package.json")), true);
+        const giPath = path.join(root, "seg", ".gitignore");
+        assert.equal(existsSync(giPath), true);
+        const gi = readFileSync(giPath, "utf-8");
+        assert.equal(gi, "*\n");
     } finally {
         cleanup(root);
     }

@@ -8,6 +8,7 @@ import {
     loadPackageConfig,
     runAlias,
     runClean,
+    runSyncFiles,
 } from "../src/index.mjs";
 import { cleanup, createTmpPackage, writeConfig } from "./helpers.mjs";
 
@@ -194,6 +195,7 @@ test("loadPackageConfig applies defaults", () => {
         const config = loadPackageConfig({ cwd: root });
         assert.equal(config.packageName, "@omiio/test-pkg");
         assert.deepEqual(config.entries, []);
+        assert.deepEqual(config.ignoreFilesEntries, []);
         assert.equal(config.sourceDir, "src");
         assert.equal(config.sourceIndex, "index.ts");
         assert.equal(config.outDir, "dist");
@@ -276,6 +278,145 @@ test("runClean removes dist and alias folders", () => {
 
         assert.equal(existsSync(path.join(root, "dist")), false);
         assert.equal(existsSync(path.join(root, "core")), false);
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("runSyncFiles writes dist and alias package manifests", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./check": "./dist/check.js",
+            "./nested/deep": "./dist/nested/deep.js",
+        },
+    });
+    try {
+        const changed = runSyncFiles({ cwd: root });
+        const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8"));
+
+        assert.equal(changed, true);
+        assert.deepEqual(pkg.files, [
+            "dist",
+            "check/package.json",
+            "nested/deep/package.json",
+        ]);
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("runSyncFiles is idempotent when files already up to date", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./check": "./dist/check.js",
+        },
+        files: ["dist", "check/package.json"],
+    });
+    try {
+        const changed = runSyncFiles({ cwd: root });
+        assert.equal(changed, false);
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("runSyncFiles respects pkg-scripts.config ignoreExports and entries merge", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./drop": "./dist/drop.js",
+            "./keep": "./dist/keep.js",
+        },
+    });
+    try {
+        writeConfig(root, {
+            ignoreExports: ["drop"],
+            entries: ["extra", "keep"],
+        });
+        const changed = runSyncFiles({ cwd: root });
+        const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8"));
+
+        assert.equal(changed, true);
+        assert.deepEqual(pkg.files, [
+            "dist",
+            "keep/package.json",
+            "extra/package.json",
+        ]);
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("runSyncFiles supports alternate configFile for entries", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./api": "./dist/api.js",
+        },
+    });
+    try {
+        writeConfig(
+            root,
+            {
+                ignoreExports: ["api"],
+                entries: ["custom"],
+            },
+            "custom-pkg-scripts.json"
+        );
+        const changed = runSyncFiles({
+            cwd: root,
+            configFile: "custom-pkg-scripts.json",
+        });
+        const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8"));
+
+        assert.equal(changed, true);
+        assert.deepEqual(pkg.files, ["dist", "custom/package.json"]);
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("loadPackageConfig normalizes ignoreFilesEntries", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./alpha": "./dist/alpha.js",
+        },
+    });
+    try {
+        writeConfig(root, {
+            ignoreFilesEntries: ["alpha", "./nested/deep", ".", "./package.json"],
+        });
+        const config = loadPackageConfig({ cwd: root });
+        assert.deepEqual(config.ignoreFilesEntries, ["alpha", "nested/deep"]);
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("runSyncFiles ignores files entries configured by ignoreFilesEntries", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./check": "./dist/check.js",
+            "./serve": "./dist/serve.js",
+        },
+    });
+    try {
+        writeConfig(root, { ignoreFilesEntries: ["check"] });
+        const changed = runSyncFiles({ cwd: root });
+        const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8"));
+
+        assert.equal(changed, true);
+        assert.deepEqual(pkg.files, ["dist", "serve/package.json"]);
     } finally {
         cleanup(root);
     }

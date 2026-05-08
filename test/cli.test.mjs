@@ -52,7 +52,30 @@ test("cli shows usage for unknown command", () => {
         const result = runCli({ cwd: root, args: ["unknown"] });
 
         assert.equal(result.status, 1);
-        assert.match(result.stderr, /Usage: omi-io-pkg <alias\|build\|clean>/);
+        assert.match(
+            result.stderr,
+            /Usage: omi-io-pkg <alias\|build\|clean\|sync-files>/
+        );
+    } finally {
+        cleanup(root);
+    }
+});
+
+test("cli sync-files writes files list from exports entries", () => {
+    const root = createTmpPackage({
+        name: "@omiio/test-pkg",
+        exports: {
+            ".": "./dist/index.js",
+            "./core": "./dist/core.js",
+        },
+        files: ["dist"],
+    });
+    try {
+        const result = runCli({ cwd: root, args: ["sync-files"] });
+
+        assert.equal(result.status, 0);
+        const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8"));
+        assert.deepEqual(pkg.files, ["dist", "core/package.json"]);
     } finally {
         cleanup(root);
     }

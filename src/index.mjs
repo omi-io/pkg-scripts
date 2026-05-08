@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { build } from "esbuild";
 import {
     BASE_BUILD_CONFIG,
@@ -91,6 +91,35 @@ export const runAlias = ({ cwd, configFile } = {}) => {
         );
         syncAliasDirGitignore(config.packageDir, alias);
     });
+};
+
+export const runSyncFiles = ({ cwd, configFile } = {}) => {
+    const config = loadPackageConfig({ cwd, configFile });
+    const packageJsonPath = path.join(config.packageDir, "package.json");
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    const ignored = new Set(config.ignoreFilesEntries ?? []);
+
+    const aliasPackageJsonFiles = config.entries
+        .filter(entry => !ignored.has(entry))
+        .map(entry => path.posix.join(entry.replace(/\\/g, "/"), "package.json"));
+    const nextFiles = ["dist", ...aliasPackageJsonFiles];
+
+    const currentFiles = Array.isArray(packageJson.files) ? packageJson.files : [];
+    const isSame =
+        currentFiles.length === nextFiles.length &&
+        currentFiles.every((item, index) => item === nextFiles[index]);
+
+    if (isSame) {
+        return false;
+    }
+
+    packageJson.files = nextFiles;
+    writeFileSync(
+        packageJsonPath,
+        `${JSON.stringify(packageJson, null, 2)}\n`,
+        "utf-8"
+    );
+    return true;
 };
 
 export {

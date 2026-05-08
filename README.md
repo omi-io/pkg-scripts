@@ -16,6 +16,7 @@ npm install --save-dev @omi-io/pkg-scripts
   - `runBuild()`
   - `runClean()`
   - `runAlias()`
+  - `runSyncFiles()`
   - `loadPackageConfig()`
   - `getEntriesFromPackageExports()`
   - `getBuildOutputGlobsFromConfig()` (for custom tooling; Nx plugin uses this internally)
@@ -24,6 +25,7 @@ npm install --save-dev @omi-io/pkg-scripts
   - `omi-io-pkg build`
   - `omi-io-pkg clean`
   - `omi-io-pkg alias`
+  - `omi-io-pkg sync-files`
   - `omi-io-pkg-release-with-config <cmd> [...args]` (injects release types into `nx.json` temporarily and restores the file after command run)
 
 ## Entries and config
@@ -44,6 +46,7 @@ Example:
 ```json
 {
   "ignoreExports": ["check"],
+  "ignoreFilesEntries": ["internal"],
   "entries": ["internal"],
   "sourceDir": "src",
   "sourceIndex": "index.ts",
@@ -61,6 +64,10 @@ Example:
 - `ignoreExports`: `string[]` (optional)
   - Extra `exports` keys to skip when building the list (same strings as in `package.json`, or a short name without `./`, e.g. `"check"` is treated like `"./check"`).
   - Default ignores always apply: `"."` and `"./package.json"`.
+- `ignoreFilesEntries`: `string[]` (optional)
+  - Entries to force-exclude from `runSyncFiles()` output (`package.json` -> `files`).
+  - Accepts both short names (`"check"`) and export-style keys (`"./check"`).
+  - Useful when an entry should still be built/aliased but must not be published as `<entry>/package.json`.
 - `sourceDir`: `string` (default: `"src"`)
   - Source root for entry points.
 - `sourceIndex`: `string` (default: `"index.ts"`)
@@ -128,7 +135,7 @@ Example for `@acme/colors`:
 ```json
 {
   "scripts": {
-    "build": "omi-io-pkg clean && omi-io-pkg build && tsc && omi-io-pkg alias"
+    "build": "omi-io-pkg clean && omi-io-pkg build && tsc && omi-io-pkg alias && omi-io-pkg sync-files"
   }
 }
 ```
@@ -164,6 +171,7 @@ The plugin matches `**/package.json` outside `node_modules`, keeps packages whos
 ## Notes
 
 - `runAlias()` creates `<package>/<entry>/package.json` aliases for subpath imports (one folder per merged entry name).
+- `runSyncFiles()` rewrites `package.json` -> `files` to `["dist", "<entry>/package.json", ...]` using the merged entry list (from `exports` + optional config `entries`), then removes any entries listed in `ignoreFilesEntries`.
 - **Git:** those stub directories are build outputs. `runAlias()` / `omi-io-pkg alias` writes `<package>/<entry>/.gitignore` for every generated alias folder, with the fixed content `*` (newline-terminated). This keeps generated files in alias directories out of `git status` without requiring package-root ignore rules.
 - CLI commands resolve config from the current working directory.
 

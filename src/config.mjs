@@ -16,6 +16,21 @@ const normalizeIgnoreExportKey = key => {
     return key.startsWith("./") ? key : `./${key}`;
 };
 
+const normalizeEntryName = value => {
+    if (typeof value !== "string") {
+        return null;
+    }
+    if (value === ".") {
+        return null;
+    }
+    const normalized = value.startsWith("./") ? value.slice(2) : value;
+    const trimmed = normalized.replace(/^\/+|\/+$/g, "");
+    if (!trimmed || trimmed === "package.json") {
+        return null;
+    }
+    return trimmed;
+};
+
 const exportKeyToEntry = exportKey => {
     if (exportKey === ".") {
         return null;
@@ -151,11 +166,17 @@ export const loadPackageConfig = ({
         ? userConfig.entries
         : [];
     const entries = mergeEntryLists(exportEntries, configEntries);
+    const ignoreFilesEntries = Array.isArray(userConfig.ignoreFilesEntries)
+        ? userConfig.ignoreFilesEntries
+              .map(normalizeEntryName)
+              .filter(entry => entry != null)
+        : [];
 
     return {
         packageDir,
         packageName: packageJson.name,
         entries,
+        ignoreFilesEntries,
         sourceDir: userConfig.sourceDir ?? DEFAULT_SOURCE_DIR,
         sourceIndex: userConfig.sourceIndex ?? DEFAULT_SOURCE_INDEX,
         outDir: userConfig.outDir ?? DEFAULT_OUT_DIR,

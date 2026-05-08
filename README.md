@@ -82,6 +82,9 @@ This package also ships reusable Nx release helpers for conventional commits:
   - exports `COMMIT_TYPES` and `TYPE_SUBJECTS`
 - `@omi-io/pkg-scripts/changelog-type-first-renderer`
   - changelog renderer that keeps "type section + scope-first line item" style
+- `@omi-io/pkg-scripts/changelog-scope-filtered-renderer`
+  - same type-first renderer, but project changelog entries are filtered by package `scopeCommitName`
+  - useful in monorepos to avoid mixing commits from other package scopes (`root`, other libs, release scope, etc.)
 - CLI `omi-io-pkg-release-with-config`
   - injects `release.conventionalCommits.types` into workspace `nx.json` for one command execution and restores the original file
 
@@ -90,6 +93,20 @@ Example in CI:
 ```bash
 omi-io-pkg-release-with-config yarn nx release version 1.2.3 --projects=my-lib
 omi-io-pkg-release-with-config yarn nx release changelog 1.2.3 --projects=my-lib
+```
+
+Example renderer in `nx.json`:
+
+```json
+{
+  "release": {
+    "changelog": {
+      "projectChangelogs": {
+        "renderer": "@omi-io/pkg-scripts/changelog-scope-filtered-renderer"
+      }
+    }
+  }
+}
 ```
 
 ## Use in Your Package

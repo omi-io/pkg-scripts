@@ -24,6 +24,7 @@ npm install --save-dev @omi-io/pkg-scripts
   - `omi-io-pkg build`
   - `omi-io-pkg clean`
   - `omi-io-pkg alias`
+  - `omi-io-pkg-release-with-config <cmd> [...args]` (injects release types into `nx.json` temporarily and restores the file after command run)
 
 ## Entries and config
 
@@ -73,6 +74,24 @@ Example:
 
 `loadPackageConfig({ cwd, configFile })` reads `package.json` and, if it exists, `pkg-scripts.config.json` (or the file name you pass as `configFile`). `getEntriesFromPackageExports(packageJson, ignoreExportKeys?)` applies the same export-key rules as the loader (defaults for ignored keys match the loader when you omit the second argument).
 
+## Nx release helpers (dynamic config)
+
+This package also ships reusable Nx release helpers for conventional commits:
+
+- `@omi-io/pkg-scripts/release-conventional-commits`
+  - exports `COMMIT_TYPES` and `TYPE_SUBJECTS`
+- `@omi-io/pkg-scripts/changelog-type-first-renderer`
+  - changelog renderer that keeps "type section + scope-first line item" style
+- CLI `omi-io-pkg-release-with-config`
+  - injects `release.conventionalCommits.types` into workspace `nx.json` for one command execution and restores the original file
+
+Example in CI:
+
+```bash
+omi-io-pkg-release-with-config yarn nx release version 1.2.3 --projects=my-lib
+omi-io-pkg-release-with-config yarn nx release changelog 1.2.3 --projects=my-lib
+```
+
 ## Use in Your Package
 
 Example for `@acme/colors`:
@@ -120,7 +139,10 @@ In the repo root `nx.json`:
 
 Requirements: `nx` and `@nx/devkit` compatible with your workspace (v19+). They are **optional** `peerDependencies` of `@omi-io/pkg-scripts`; install them in the workspace root as usual for Nx.
 
-The plugin matches `**/package.json` outside `node_modules`, keeps packages whose **any** script mentions `omi-io-pkg` and that define a **`build`** script, then sets `targets.build.outputs` from `dist` (or `outDir` in `pkg-scripts.config.json`) plus one `{projectRoot}/<entry>/**` per merged entry (same rules as `exports` + config `entries`).
+The plugin matches `**/package.json` outside `node_modules`, keeps packages whose **any** script mentions `omi-io-pkg` and that define a **`build`** script, then sets:
+
+- `targets.build.outputs` from `dist` (or `outDir` in `pkg-scripts.config.json`) plus one `{projectRoot}/<entry>/**` per merged entry (same rules as `exports` + config `entries`)
+- `targets.build.inputs` with conservative defaults (`default`, `^production`, and explicit package-local source/config globs) to reduce stale cache hits in workspaces with customized `namedInputs`
 
 ## Notes
 

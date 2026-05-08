@@ -27,13 +27,16 @@
     "access": "public"
   },
   "bin": {
-    "omi-io-pkg": "bin/cli.mjs"
+    "omi-io-pkg": "bin/cli.mjs",
+    "omi-io-pkg-release-with-config": "bin/release-with-config.cjs"
   },
   "main": "./src/index.mjs",
   "module": "./src/index.mjs",
   "exports": {
     ".": "./src/index.mjs",
-    "./nx": "./src/nx-plugin.mjs"
+    "./nx": "./src/nx-plugin.mjs",
+    "./release-conventional-commits": "./src/release-conventional-commits.cjs",
+    "./changelog-type-first-renderer": "./src/changelog-type-first-renderer.cjs"
   },
   "files": [
     "bin",
